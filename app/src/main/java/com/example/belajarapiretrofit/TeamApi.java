@@ -6,5 +6,8 @@ import retrofit2.http.Query;
 
 public interface TeamApi {
     @GET("search_all_teams.php?l=English%20Premier%20League")
-    Call<TeamResponse> getAllTeams(@Query("l") String league);
+    Call<TeamResponse> getEnglishPremierLeague(@Query("l") String league);
+
+    @GET("/api/v1/json/3/search_all_teams.php?l=Spanish%20La%20Liga")
+    Call<TeamResponse> getLaliga(@Query("l") String league);
 }
