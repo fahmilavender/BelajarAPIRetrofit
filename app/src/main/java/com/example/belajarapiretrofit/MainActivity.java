@@ -22,47 +22,68 @@ import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
     RecyclerView rvTeam;
-    ProgressBar pbLoading;
     TeamAdapter teamAdapter;
+    ProgressBar pbLoading;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        String leagueName = getIntent().getStringExtra("LEAGUE");
+
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-        rvTeam = findViewById(R.id.rvTeam);
-        pbLoading = findViewById(R.id.pbLoading);
-
+        pbLoading = (ProgressBar) findViewById(R.id.pbLoading);
+        rvTeam = (RecyclerView) findViewById(R.id.rvTeam);
         rvTeam.setLayoutManager(new LinearLayoutManager(this));
 
-        loadTeams();
+        TeamApi api = RetrofitClient.getInstance().create(TeamApi.class);
+
+        if (leagueName.equals("LALIGA")) {
+            fetchEnglishPremierLeagueTeams(api);
+        } else if (leagueName.equals("EPL")) {
+            fetchLaligaTeams(api);
+        }
     }
 
-    private void loadTeams() {
-        pbLoading.setVisibility(View.VISIBLE);
-
-        TeamApi api = RetrofitClient.getInstance().create(TeamApi.class);
-        Call<TeamResponse> call = api.getAllTeams("English Premier League");
-
-        call.enqueue(new Callback<TeamResponse>() {
+    private void fetchLaligaTeams(TeamApi api) {
+        api.getEnglishPremierLeague("English Premier League").enqueue(new Callback<TeamResponse>() {
             @Override
             public void onResponse(Call<TeamResponse> call, Response<TeamResponse> response) {
-                pbLoading.setVisibility(View.GONE);
-
                 if (response.isSuccessful() && response.body() != null) {
                     List<ItemModel> teams = response.body().getTeams();
                     teamAdapter = new TeamAdapter(teams);
                     rvTeam.setAdapter(teamAdapter);
-                } else {
-                    Toast.makeText(MainActivity.this, "Gagal mendapatkan data!", Toast.LENGTH_SHORT).show();
+                    rvTeam.setVisibility(View.VISIBLE);
+                    pbLoading.setVisibility(View.GONE);
                 }
             }
 
             @Override
             public void onFailure(Call<TeamResponse> call, Throwable t) {
-                pbLoading.setVisibility(View.GONE);
-                Toast.makeText(MainActivity.this, "GAGAL: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                Log.e("API_ERROR", t.getMessage(), t);
+                Log.e("API_ERROR", t.getMessage());
+                Toast.makeText(MainActivity.this, "Failed to fetch data", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void fetchEnglishPremierLeagueTeams(TeamApi api) {
+        api.getLaliga("Spanish La Liga").enqueue(new Callback<TeamResponse>() {
+            @Override
+            public void onResponse(Call<TeamResponse> call, Response<TeamResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<ItemModel> teams = response.body().getTeams();
+                    teamAdapter = new TeamAdapter(teams);
+                    rvTeam.setAdapter(teamAdapter);
+                    rvTeam.setVisibility(View.VISIBLE);
+                    pbLoading.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<TeamResponse> call, Throwable t) {
+                Log.e("API_ERROR", t.getMessage());
+                Toast.makeText(MainActivity.this, "Failed to fetch data", Toast.LENGTH_SHORT).show();
             }
         });
     }
